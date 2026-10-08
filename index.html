@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中央公民館 登録団体検索</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Noto Sans JP",
+               "Yu Gothic", sans-serif;
+  background: #f5f7fa;
+  color: #333;
+}
+
+header {
+  background: #2f6f8f;
+  color: white;
+  padding: 28px 20px;
+  text-align: center;
+}
+
+header h1 {
+  margin: 0 0 8px;
+  font-size: 26px;
+}
+
+header p {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.container {
+  max-width: 900px;
+  margin: 25px auto;
+  padding: 0 16px;
+}
+
+.search-box {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+
+.search-box input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px;
+  font-size: 17px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.count {
+  margin: 20px 0 10px;
+  font-weight: bold;
+}
+
+.card {
+  background: white;
+  margin-bottom: 12px;
+  padding: 18px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.07);
+}
+
+.card h2 {
+  margin: 0 0 8px;
+  font-size: 19px;
+  color: #2f6f8f;
+}
+
+.card p {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.no-result {
+  background: white;
+  padding: 30px;
+  text-align: center;
+  border-radius: 10px;
+  color: #777;
+}
+
+footer {
+  text-align: center;
+  color: #777;
+  padding: 30px 10px;
+  font-size: 13px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>中央公民館 登録団体検索</h1>
+  <p>市内のサークル・団体を探せます</p>
+</header>
+
+<div class="container">
+
+  <div class="search-box">
+    <input
+      type="search"
+      id="search"
+      placeholder="団体名や活動内容を入力してください"
+      oninput="searchGroups()"
+    >
+  </div>
+
+  <div class="count" id="count"></div>
+
+  <div id="results"></div>
+
+</div>
+
+<footer>
+  中央公民館 登録団体
+</footer>
+
+<script>
+
+/*
+  団体データ
+  ここに今回の3枚の画像に掲載されている
+  団体を入れていきます。
+*/
+
+const groups = [
+  // あ〜い
+  {
+    name: "アイ英会話",
+    activity: ""
+  },
+  {
+    name: "INGリエット",
+    activity: "週に一度、女声コーラスを楽しんでいます。"
+  },
+  {
+    name: "藍の風めぶき",
+    activity: "月２回、よさこいソーラン踊りを楽しく練習しています。"
+  },
+  {
+    name: "いけばな華保会",
+    activity: "季節のお花を感じながら楽しく学び、いけてます。第三火曜日午前中。"
+  },
+  {
+    name: "生け花ききょう会",
+    activity: "第2、第4（水）13時30分～、小原流生け花で、四季折々の花を生けています。"
+  },
+  {
+    name: "ECMG",
+    activity: "英会話の勉強会を、主に第1と第3水曜日の午前中にしています。"
+  },
+  {
+    name: "いなぎ藍の風（YOSAKOIソーラン）",
+    activity: "オリジナル曲作成、市民まつりなど地域行事に演舞参加。他市のまつりにも参加。"
+  },
+  {
+    name: "稲城ESS",
+    activity: "初級英会話を楽しんでいます。メンバー募集中です！"
+  },
+  {
+    name: "いなぎ草の根文化サロン",
+    activity: "設立主旨「先人達の暮し・生業を通じた文化と歴史を探り光をあてる。"
+  },
+  {
+    name: "稲城国際交流の会",
+    activity: "世界の方々と料理やスピーチなどのイベントで交流し、楽しく活動しています。"
+  },
+  {
+    name: "稲城スクエアダンスクラブ（ﾊｯﾋﾟｰﾊｰﾄ）",
+    activity: "８人で協力しながら踊るダンスです。笑顔いっぱいで楽しんでいます。"
+  },
+  {
+    name: "稲城市合唱協会",
+    activity: "稲城市内で活動する合唱団による合同演奏会等開催。"
+  },
+  {
+    name: "稲城市華道協会",
+    activity: "京王稲城駅でのお花展示や、いなぎ苑での生け花指導をしてます。"
+  },
+  {
+    name: "稲城市空手教室",
+    activity: ""
+  },
+  {
+    name: "いなぎ観光案内人の会",
+    activity: "稲城市観光協会認定の案内人が、自主研修を行っています。"
+  },
+  {
+    name: "稲城市芸術文化団体連合会(芸文連)",
+    activity: "文化祭・芸術祭の企画運営の他芸術文化活動の向上発展に協力している。"
+  },
+  {
+    name: "稲城市茶道協会",
+    activity: "茶道教授者の会、講師の派遣や茶会など茶の湯文化を伝える活動。"
+  },
+  {
+    name: "稲城市三曲協会",
+    activity: "琴、三弦、尺八師範で構成。"
+  },
+  {
+    name: "稲城市将棋クラブ",
+    activity: "どなたでも、初心者大歓迎。"
+  },
+  {
+    name: "稲城市卓球連盟",
+    activity: "卓球活動の普及を通じ、健康づくり及び技術の向上を図ってます。"
+  },
+  {
+    name: "稲城市舞踊連盟",
+    activity: "師匠が市内に舞踊教室を持っている団体で結成。"
+  },
+  {
+    name: "稲城市みどりクラブ連合会",
+    activity: "市内各地に12の老人クラブがあり、その活動を支援しています。"
+  },
+  {
+    name: "稲城市民オペラ",
+    activity: "オペラの上演を中心とした、市民の参加による音楽活動をしてます。"
+  },
+  {
+    name: "稲城市民オペラ　コーロ・ピッコロ",
+    activity: "同上"
+  },
+  {
+    name: "稲城青年会議所",
+    activity: ""
+  },
+  {
+    name: "稲城そば打ち研究会",
+    activity: "そば打ち技能の向上、親睦、そば打ちを通じ地域社会へ貢献。"
+  },
+  {
+    name: "稲城知的障がい者支援ネットワーク",
+    activity: "知的障がいのある人の家族や、関係者のネットワークづくり。"
+  },
+  {
+    name: "いなぎ寺子屋教室",
+    activity: "子どもたちと一緒に考えながら、楽しい学びをすすめています。"
+  },
+  {
+    name: "いなぎ動物愛の会",
+    activity: "飼い主のいない猫の不妊手術（捕獲、保護）、里親探し。ペット防災について。"
+  },
+  {
+    name: "稲城童謡を歌う会",
+    activity: "童謡、唱歌、ナツメロ、外国曲など幅広く、楽しく歌っています。"
+  },
+  {
+    name: "INAGI・NAGANUMA・BREAKERZ",
+    activity: ""
+  },
+
+  // い〜こ
+  {
+    name: "稲城野菊会",
+    activity: "月1回の句会で俳句を楽しみ学びます。指導はホトトギス同人。"
+  },
+  {
+    name: "いなぎ二胡サークル",
+    activity: "中国の楽器です。安らぎの音色を聴いてください。"
+  },
+  {
+    name: "稲城の里山と史蹟を守る会",
+    activity: "稲城の里山と史蹟を守る活動と、ハイキング、史跡学習。"
+  },
+  {
+    name: "稲城ひびきの会",
+    activity: "幅広い年齢層で楽しく和太鼓を打ってます。"
+  },
+  {
+    name: "稲城フラ",
+    activity: "火曜月３回、心と体のリフレッシュにフラダンスしてます（子連れOK）。"
+  },
+  {
+    name: "いなぎ平和と安全を考える連絡会",
+    activity: "平和を考え、伝える活動。"
+  },
+  {
+    name: "稲城ポニークラブ",
+    activity: "障がいのある方のカルチャースクールを開催してます。"
+  },
+  {
+    name: "稲城民謡連合会",
+    activity: ""
+  },
+  {
+    name: "稲城リトル・シニア野球協会",
+    activity: ""
+  },
+  {
+    name: "稲城老後研究会",
+    activity: "「稲城で安心な老後を」をテーマに学習してます。"
+  },
+  {
+    name: "稲小ガールズ",
+    activity: "小学校の同級生で「超～簡単で、超～美味しい料理」づくりを楽しんでいます。"
+  },
+  {
+    name: "Weラブ公民館",
+    activity: "楽しく豊かな公民館ライフのために、一緒に学びましょう。"
+  },
+  {
+    name: "絵手紙パソコンクラブ",
+    activity: "パソコンで絵手紙書きたい人、どうぞ！！。"
+  },
+  {
+    name: "絵手紙 花の会「稲千鳥」(いなちどり)",
+    activity: "暮らしの中の一コマを絵手紙にして、やりとりを楽しんでいます。"
+  },
+  {
+    name: "えほんのつばさ",
+    activity: ""
+  },
+  {
+    name: "おしゃべりサロン",
+    activity: "知的障がい者青年の自分らしさの発見と地域での仲間づくりをめざしています。スタッフ大募集中"
+  },
+  {
+    name: "乙奴連（おどれん）（阿波おどり）",
+    activity: "阿波おどり団体で、毎年15回ほど出演してます。連員大募集。"
+  },
+  {
+    name: "おはなしの城",
+    activity: "おはなしの好きな人どなたでも、おはなしを語る楽しさを味わおう。"
+  },
+  {
+    name: "親子エンジョイヨガ",
+    activity: "赤ちゃん、お子さま連れでどーぞ、ママのヨガクラブ。"
+  },
+  {
+    name: "絵画ひまわり(旧シルバー絵画クラブ)",
+    activity: "水彩、アクリル、油絵、パステル各自の好みで自由に。"
+  },
+  {
+    name: "学校運営協議会（六小）",
+    activity: ""
+  },
+  {
+    name: "桂の会",
+    activity: "道具を使わず紐だけで着付けを学びます。夏は浴衣を学びます。"
+  },
+  {
+    name: "からだの広場",
+    activity: "ヨガ、ストレッチを中心とした基礎体操を行い健康増進を図ってます。"
+  },
+  {
+    name: "吉香会",
+    activity: "日本舞踊の若柳流です。"
+  },
+  {
+    name: "教育習字中央支部",
+    activity: "くせのない、正確な文字を学習する。"
+  },
+  {
+    name: "憲法九条を守る稲城市民の会",
+    activity: "入会条件／憲法九条を守り活かす市民"
+  },
+  {
+    name: "コーラスあじさい",
+    activity: "優れた指導者、伴奏者のもと、内外の曲を歌います。"
+  },
+  {
+    name: "Chor Cres.",
+    activity: "『心豊かに美しく』を大切にハーモニーを楽しんでいる女声合唱です。"
+  },
+  {
+    name: "コール・リー",
+    activity: "６０代女性が中心、毎週水曜日に活動中。"
+  },
+  {
+    name: "こでまりの会",
+    activity: "月に１度生け花の基礎から学んでいます。季節を感じる楽しい時間です。"
+  },
+  {
+    name: "混声合唱サリーレ",
+    activity: "ユニークな体操と、発声指導、楽しい練習。"
+  },
+
+  // さ〜ほ
+  {
+    name: "さとみ会",
+    activity: "手持ちの着物を活かして、道具を使わず楽しく着付けを学びませんか。"
+  },
+  {
+    name: "しのぶえ花梨音",
+    activity: "篠笛好きが集まり、基礎から将来発表できるように練習しています。"
+  },
+  {
+    name: "ジュニア美術日曜コース",
+    activity: "子どもたちが水彩や油絵などで豊かな個性を表現しています。会員募集中！"
+  },
+  {
+    name: "書道の会はまゆう",
+    activity: "小学生対象の書道教室です。毛筆・硬筆の練習をしています。"
+  },
+  {
+    name: "新日本婦人の会稲城支部",
+    activity: "平和や教育の活動とサークル活動（コーラス、絵手紙など）"
+  },
+  {
+    name: "ジュニア空手稲城",
+    activity: "子供から大人まで、武道空手を学ぶことが出来る空手道場です。"
+  },
+  {
+    name: "生活者の会",
+    activity: "生活クラブ生協の組合員を中心とした自主学習グループです"
+  },
+  {
+    name: "ソミアート",
+    activity: "講師指導の下でダンスを学び、健康増進と親睦を図ってます。"
+  },
+  {
+    name: "第二鈷鋒会",
+    activity: "書道のお稽古、ゆったり楽しく取り組んでます。第1,第3木曜日。"
+  },
+  {
+    name: "淡彩スケッチの会",
+    activity: "月2回の活動やスケッチ旅行を含め、淡彩画を楽しんでいます。"
+  },
+  {
+    name: "紬の会",
+    activity: "着付けサークル、道具を使わず着付けを楽しんでいます"
+  },
+  {
+    name: "つながる会いなぎ",
+    activity: "障がい児者の親がつながることを目的とした会です。"
+  },
+  {
+    name: "東京稲城少年少女合唱団",
+    activity: "「人にやさしく、歌はうまく、こころは愉快に」合唱をしています。"
+  },
+  {
+    name: "稲彩会（とうさいかい）",
+    activity: "油絵、水彩画。風景・静物など好きな絵を描いてます。"
+  },
+  {
+    name: "稲和会",
+    activity: "着付けの稽古、第1、第3木曜日。着物でお出掛けしてみませんか。"
+  },
+  {
+    name: "梨の実句会",
+    activity: "楽しく、俳句をつくる会です。男女を問わず募集中。"
+  },
+  {
+    name: "日本の踊り文化協会稲城",
+    activity: "毎月2～3回、土曜に日本のおどりのお稽古を行なっています。"
+  },
+  {
+    name: "年金者稲城の会",
+    activity: "年金受給者の親睦と社会保障の向上を目指す活動。"
+  },
+  {
+    name: "パソコンクラブ若葉台",
+    activity: "Wordで絵を描きPowerpointでプレゼンする学習会。"
+  },
+  {
+    name: "パソコン楽らくクラブ",
+    activity: "excel,wordの使い方、PCトラブル、パソコン何でも相談。"
+  },
+  {
+    name: "ばななの親子族",
+    activity: "親同志お喋りしながら子育ての楽しみ方をみつけます♪"
+  },
+  {
+    name: "ぴあの・シャープ",
+    activity: "全くピアノに触れたことのない方も、楽しみながら練習してます"
+  },
+  {
+    name: "ぴあのフラット",
+    activity: "成人によるピアノを楽しみ、練習をするグループ。発表会も行ってます。"
+  },
+  {
+    name: "ピアノサークルゆーおん♪",
+    activity: "楽しく学習し、演奏力の向上を図ってます。ピアノの経験有無は問わず。"
+  },
+  {
+    name: "フェリーチェ",
+    activity: "ヴォイストレーニング（正しい発声訓練）と合唱を楽しんでいます。"
+  },
+  {
+    name: "Fun Fun Club",
+    activity: "英語に興味がある方、英語の歌を正しい発音で歌いたい方、一緒に英語を楽しく学びましょう！"
+  },
+  {
+    name: "ボイトレいなぎ",
+    activity: "熱き指導者にグイグイ引き寄せられ、楽しく声を出して歌います！"
+  },
+  {
+    name: "ぼいとれYOU",
+    activity: "月1回、熱血先生のご指導のもと、大きな声で楽しく歌っています。"
+  },
+  {
+    name: "墨祥会（ぼくしょうかい）",
+    activity: "学生・社会人共に楽しみながら書道の上達を目指しています。"
+  },
+  {
+    name: "蛍の会",
+    activity: "自由な発想を大切に生け花を学んでいます。草月流応用コース。"
+  },
+  {
+    name: "墨華会",
+    activity: "墨絵の会。金曜日に活動しています。（第1、第3：中央公民館 ／ 第2、第4：iプラザ）"
+  },
+
+  // ま〜わ
+  {
+    name: "マーガレットグループ",
+    activity: "毎月、第２と第４火曜日午前中、中央公民館で楽しく活動しております"
+  },
+  {
+    name: "マコリョーシカ",
+    activity: ""
+  },
+  {
+    name: "町田友の会（若葉台もより）",
+    activity: "家庭生活全般を学び合う。どなたでも見学可。"
+  },
+  {
+    name: "学びと地域活動の会",
+    activity: "市民の学びと地域活動を聞き取り次世代へ伝えていく。"
+  },
+  {
+    name: "ミュージカル・ドリーム",
+    activity: "歌、踊り、芝居の稽古をしながら年1回の発表を目指す。入団大歓迎！"
+  },
+  {
+    name: "南十字星",
+    activity: "音楽活動を楽しんでます。老人施設を訪ねての演奏活動もしてます。"
+  },
+  {
+    name: "未来世代につなぐ稲城まちづくりの会",
+    activity: "気候危機、地産地消など持続可能ないなぎのまちづくり活動。"
+  },
+  {
+    name: "モーフィアスジャズオーケストラ",
+    activity: "依頼があれば、何処ででも演奏をします。"
+  },
+  {
+    name: "モキハナ",
+    activity: "美しく、楽しいフラダンス。小学生から７０代と幅広い会員構成。"
+  },
+  {
+    name: "NPO法人 友遊クラブ",
+    activity: "障がいのある子ども中心の団体。月３～４回太鼓練習をしています。"
+  },
+  {
+    name: "洋裁クラブ",
+    activity: "先生に製図をしていただき、裁断、仮縫い、縫製などを学んでいます。"
+  },
+  {
+    name: "楽墨会",
+    activity: "水墨画に顔彩で色も使います。"
+  },
+  {
+    name: "ラタン会",
+    activity: "籐工芸技術の習得を目指しています。"
+  },
+  {
+    name: "レイレフアの会",
+    activity: "幅広い年代でフラダンスを楽しんでます。経験問わず、会員募集中です。"
+  },
+  {
+    name: "朗読の会「稲城アミーゴ」",
+    activity: "感動を声に託して、朗読を楽しみます。"
+  },
+  {
+    name: "和太鼓｢和」NAGOMI",
+    activity: "地域の祭り等で活動しながら和太鼓を楽しむ団体です。見学・体験もぜひ！"
+  },
+  {
+    name: "和太鼓いなぎ太鼓",
+    activity: "木曜日の夜間に練習しています。郷土芸能祭、i祭、文化祭、神社の祭、等に参加。"
+  }
+];
+
+function searchGroups() {
+
+  const keyword =
+    document.getElementById("search").value
+      .trim()
+      .toLowerCase();
+
+  const results = groups.filter(group => {
+
+    const text =
+      group.name + " " + group.activity;
+
+    return text.toLowerCase().includes(keyword);
+  });
+
+  displayResults(results);
+}
+
+function displayResults(results) {
+
+  const area = document.getElementById("results");
+  const count = document.getElementById("count");
+
+  count.textContent =
+    results.length + "件の団体が見つかりました";
+
+  if (results.length === 0) {
+
+    area.innerHTML =
+      '<div class="no-result">該当する団体がありません。</div>';
+
+    return;
+  }
+
+  area.innerHTML = results.map(group => `
+    <div class="card">
+      <h2>${escapeHtml(group.name)}</h2>
+      <p>${escapeHtml(group.activity)}</p>
+    </div>
+  `).join("");
+}
+
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+displayResults(groups);
+
+</script>
+
+</body>
+</html>
